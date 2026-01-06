@@ -2,6 +2,7 @@
 #define INSERT_MEMBER_ROUTE
 
 #include "route.hxx"
+#include "types/UserFields.hxx"
 #include "websocket_controller.hxx"
 #include "crow.h"
 
