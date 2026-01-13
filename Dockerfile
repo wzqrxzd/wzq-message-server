@@ -11,10 +11,15 @@ RUN apt update && apt install -y \
   libsodium-dev \
   libasio-dev \
   libpqxx-dev \
+  nlohmann-json3-dev \
   && rm -rf /var/lib/apt/lists/*
 
 
 WORKDIR /usr/local/app
+
+RUN mkdir -p libs && \
+  git clone --depth 1 https://github.com/Thalhammer/jwt-cpp.git libs/jwt-cpp && \
+  git clone --depth 1 https://github.com/CrowCpp/Crow.git libs/crow
 
 COPY . .
 EXPOSE 8080
