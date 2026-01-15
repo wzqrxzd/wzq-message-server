@@ -5,6 +5,7 @@
 #include "utils.hxx"
 #include <spdlog/spdlog.h>
 #include <fmt/format.h>
+#include "crow_core_adapter.hxx"
 
 CreateChatRoute::CreateChatRoute(crow::App<crow::CORSHandler>& app, WebsocketController& ws, AuthService& auth, Database& db) : WsAccessRoute(app, ws, auth, db) {}
 
@@ -12,7 +13,7 @@ void CreateChatRoute::setup()
 {
   CROW_ROUTE(app, "/chats").methods(crow::HTTPMethod::POST)([this](const crow::request& req){
     return trySafe([&](){
-      if (!auth.authorizeRequest(req))
+      if (!auth.authorizeRequest(adapter::CrowRequest(req)))
         throw AuthException(AuthError::TokenExpired);
 
       std::string token = req.get_header_value("Authorization").substr(7);

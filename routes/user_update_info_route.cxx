@@ -4,6 +4,7 @@
 #include "utils.hxx"
 #include <spdlog/spdlog.h>
 #include <fmt/format.h>
+#include "crow_core_adapter.hxx"
 
 UserUpdateInfoRoute::UserUpdateInfoRoute(crow::App<crow::CORSHandler>& app, WebsocketController& ws, AuthService& auth, Database& db) : WsAccessRoute(app, ws, auth, db) {}
 
@@ -11,7 +12,7 @@ void UserUpdateInfoRoute::setup()
 {
   CROW_ROUTE(app, "/user/<int>").methods(crow::HTTPMethod::PATCH)([this](const crow::request& req, int expectedUserId){
     return trySafe([&](){
-        const std::string username = auth.authorize(req);
+        const std::string username = auth.authorize(adapter::CrowRequest(req));
         const UserFields updatedFields = parseRequest(req);
 
         ensureOwner(username, expectedUserId);

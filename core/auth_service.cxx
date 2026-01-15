@@ -33,9 +33,9 @@ bool AuthService::verifyPassword(const std::string& hash, const std::string& pas
   return argon2i_verify(hash.c_str(), password.c_str(), password.size()) == ARGON2_OK;
 }
 
-bool AuthService::authorizeRequest(const crow::request& req)
+bool AuthService::authorizeRequest(const http::Request& req)
 {
-  auto authHeader = req.get_header_value("Authorization");
+  std::string authHeader = std::string(req.getHeader("Authorization").value_or(""));
   if (authHeader.empty())
     return false;
 
@@ -82,7 +82,7 @@ std::string AuthService::getUsernameFromToken(const std::string& token)
 }
 
 
-std::string AuthService::authorize(const crow::request& req)
+std::string AuthService::authorize(const http::Request& req)
 {
   if (!authorizeRequest(req))
     throw AuthException(AuthError::TokenExpired);

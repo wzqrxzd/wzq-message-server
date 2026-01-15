@@ -3,6 +3,7 @@
 #include "utils.hxx"
 #include <spdlog/spdlog.h>
 #include <fmt/format.h>
+#include "crow_core_adapter.hxx"
 
 DeleteChatRoute::DeleteChatRoute(crow::App<crow::CORSHandler>& app, WebsocketController& ws, AuthService& auth, Database& db) : WsAccessRoute(app, ws, auth, db) {}
 
@@ -10,7 +11,7 @@ void DeleteChatRoute::setup()
 {
   CROW_ROUTE(app, "/chats/<int>").methods(crow::HTTPMethod::DELETE)([this](const crow::request& req, int chatId){
     return trySafe([&](){
-      if (!auth.authorizeRequest(req))
+      if (!auth.authorizeRequest(adapter::CrowRequest(req)))
         throw AuthException(AuthError::TokenExpired);
 
       std::string token = req.get_header_value("Authorization").substr(7);

@@ -3,6 +3,7 @@
 #include "utils.hxx"
 #include <spdlog/spdlog.h>
 #include <fmt/format.h>
+#include "crow_core_adapter.hxx"
 #include "types/UserFields.hxx"
 
 UserInfoRoute::UserInfoRoute(crow::App<crow::CORSHandler>& app, WebsocketController& ws, AuthService& auth, Database& db) : WsAccessRoute(app, ws, auth, db) {}
@@ -11,7 +12,7 @@ void UserInfoRoute::setup()
 {
   CROW_ROUTE(app, "/user/<int>").methods(crow::HTTPMethod::GET)([this](const crow::request& req, int userId){
     return trySafe([&](){
-      std::string username = auth.authorize(req);
+      std::string username = auth.authorize(adapter::CrowRequest(req));
       UserFields requestedUserInfo = getUserFieldsById(userId);
 
       return buildUserInfoResponse(requestedUserInfo);

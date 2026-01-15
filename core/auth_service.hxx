@@ -2,7 +2,7 @@
 #define AUTH_SERVICE
 
 #include <string>
-#include "crow.h"
+#include "types/HttpTypes.hxx"
 
 class AuthService {
   public:
@@ -11,9 +11,8 @@ class AuthService {
     bool verifyPassword(const std::string& hash, const std::string& password);
     std::string hashPassword(const std::string& password);
 
-    std::string authorize(const crow::request& req);
-
-    bool authorizeRequest(const crow::request& req);
+    std::string authorize(const http::Request& req);
+    bool authorizeRequest(const http::Request& req);
     std::string generateJWT(const std::string& username);
     std::string getUsernameFromToken(const std::string& token);
   private:

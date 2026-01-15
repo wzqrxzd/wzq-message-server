@@ -5,6 +5,7 @@
 #include <spdlog/spdlog.h>
 #include <fmt/format.h>
 #include "types/Message.hxx"
+#include "crow_core_adapter.hxx"
 
 SendMessageRoute::SendMessageRoute(crow::App<crow::CORSHandler>& app, WebsocketController& ws, AuthService& auth, Database& db) : WsAccessRoute(app, ws, auth, db) {}
 
@@ -12,7 +13,7 @@ void SendMessageRoute::setup()
 {
   CROW_ROUTE(app, "/chats/<int>/messages").methods(crow::HTTPMethod::POST)([this](const crow::request& req, int chatId){
     return trySafe([&](){
-      const std::string username = auth.authorize(req);
+      const std::string username = auth.authorize(adapter::CrowRequest(req));
       const int userId = getIdFromUsername(username);
 
       ensureUserInChat(userId, chatId);
