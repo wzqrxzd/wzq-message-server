@@ -1,8 +1,8 @@
 #ifndef WEBSOCKET_CONTROLLER
 #define WEBSOCKET_CONTROLLER
 
-#include "auth_service.hxx"
 #include "crow.h"
+#include "auth_service.hxx"
 #include "database.hxx"
 #include "types/Message.hxx"
 #include <functional>

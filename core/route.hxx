@@ -10,20 +10,23 @@
 class Route
 {
   public:
-    explicit Route(crow::App<crow::CORSHandler>& app, AuthService& auth, Database& db) : app(app), dbHandle(db), auth(auth) {}
-    virtual void setup() = 0;
+    Route(const std::string& path, const http::Method& method, AuthService& auth, Database& db) : path(path), method(method), dbHandle(db), auth(auth) {}
+    virtual std::unique_ptr<http::Response> handleRequest(const http::Request& req) = 0;
     virtual ~Route() = default;
-
   protected:
-    crow::App<crow::CORSHandler>& app;
+    friend class RouteManager;
+
     Database& dbHandle;
     AuthService& auth;
+
+    std::string path;
+    http::Method method;
 };
 
 class WsAccessRoute : public Route
 {
   public:
-    explicit WsAccessRoute(crow::App<crow::CORSHandler>& app, WebsocketController& ws, AuthService& auth, Database& db) : Route(app, auth, db), wsController(ws){}
+    WsAccessRoute(const std::string& path, const http::Method& method, WebsocketController& ws, AuthService& auth, Database& db) : Route(path, method, auth, db), wsController(ws){}
     void isWebSocket(){};
   protected:
     WebsocketController& wsController;

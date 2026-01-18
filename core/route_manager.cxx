@@ -1,19 +1,19 @@
 #include "route_manager.hxx"
+#include <spdlog/spdlog.h>
+#include "utils.hxx"
 
-RouteManager::RouteManager(crow::App<crow::CORSHandler>& app, AuthService& auth, Database& db) : app(app), auth(auth), db(db), wsController() {}
+RouteManager::RouteManager(WebServer& server, AuthService& auth, Database& db) : server(server), auth(auth), db(db), wsController() {}
 
 void RouteManager::setupRoutes()
 {
   for (const auto& route : routes)
   {
-    route->setup();
-  }
-}
-
-RouteManager::~RouteManager() noexcept
-{
-  for (const auto& route : routes)
-  {
-    delete route;
+     server.addRoute(
+         route->path,
+         route->method,
+         [handler = route.get()](const http::Request& req) {
+            return handler->handleRequest(req);
+         }
+     );
   }
 }

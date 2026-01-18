@@ -2,17 +2,14 @@
 #define SERVER_HXX
 
 #include "auth_service.hxx"
-#include "crow.h"
+#include "crow_core_adapter.hxx"
 #include "database.hxx"
 #include "crow/middlewares/cors.h"
-#include "error.hxx"
 #include "route.hxx"
 #include "route_manager.hxx"
 #include <fmt/format.h>
 #include <pqxx/pqxx>
-#include <functional>
 #include <spdlog/spdlog.h>
-#include <unordered_set>
 
 class Server
 {
@@ -23,6 +20,7 @@ class Server
     void setupRoutes();
 
     crow::App<crow::CORSHandler> app;
+    adapter::CrowServer server;
     AuthService auth;
     RouteManager routeManager;
     Database dbHandle;

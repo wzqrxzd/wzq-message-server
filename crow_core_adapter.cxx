@@ -18,6 +18,22 @@ http::Method adapter::convertMethod(crow::HTTPMethod method)
   }
 }
 
+crow::HTTPMethod adapter::convertToCrowMethod(const http::Method method)
+{
+  switch (method) 
+  {
+    case http::Method::GET: return crow::HTTPMethod::GET;
+    case http::Method::DELETE: return crow::HTTPMethod::DELETE;
+    case http::Method::HEAD: return crow::HTTPMethod::HEAD;
+    case http::Method::POST: return crow::HTTPMethod::POST;
+    case http::Method::PUT: return crow::HTTPMethod::PUT;
+    case http::Method::OPTIONS: return crow::HTTPMethod::OPTIONS;
+    case http::Method::TRACE: return crow::HTTPMethod::TRACE;
+    case http::Method::PATCH: return crow::HTTPMethod::PATCH;
+    default: return crow::HTTPMethod::GET;
+  }
+}
+
 http::Method adapter::CrowRequest::method() const
 {
   return convertMethod(req.method);
@@ -40,3 +56,50 @@ std::optional<std::string_view> adapter::CrowRequest::getHeader(const std::strin
     return std::nullopt;
   return it->second;
 }
+
+adapter::CrowResponse::CrowResponse(std::unique_ptr<http::Response> response)
+{
+  res.code = response->code();
+  res.body = response->body();
+}
+
+adapter::CrowResponse::~CrowResponse() = default;
+
+int adapter::CrowResponse::code() const
+{
+  return res.code;
+}
+
+std::string_view adapter::CrowResponse::body() const
+{
+  return res.body;
+}
+
+void adapter::CrowResponse::setCode(const int& code)
+{
+  res.code = code;
+}
+
+void adapter::CrowResponse::setBody(const std::string_view& sv)
+{
+  res.body = std::string(sv);
+}
+
+crow::response adapter::CrowResponse::getResponse()
+{
+  return std::move(res);
+}
+
+adapter::CrowServer::~CrowServer() = default;
+
+void adapter::CrowServer::addRoute(const std::string& path, http::Method method, std::function<std::unique_ptr<http::Response>(const http::Request&)> handler)
+{
+  app.route_dynamic(path)
+  .methods(adapter::convertToCrowMethod(method))
+  ([handler](const crow::request& req) {
+    adapter::CrowRequest reqAdapt(req);
+    adapter::CrowResponse response(handler(reqAdapt));
+    return response.getResponse();
+  });
+}
+

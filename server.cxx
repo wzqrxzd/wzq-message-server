@@ -6,17 +6,18 @@
 #include "env_utils.hxx"
 #include "server.hxx"
 #include <sodium.h>
-#include "routes/chats_messages_route.hxx"
-#include "routes/create_chat_route.hxx"
-#include "routes/delete_message_route.hxx"
-#include "routes/insert_member_route.hxx"
-#include "routes/register_route.hxx"
-#include "routes/login_route.hxx"
-#include "routes/send_message_route.hxx"
-#include "routes/chats_route.hxx"
-#include "routes/user_info_route.hxx"
-#include "routes/user_update_info_route.hxx"
-#include "routes/ws_route.hxx"
+// #include "routes/chats_messages_route.hxx"
+// #include "routes/create_chat_route.hxx"
+// #include "routes/delete_message_route.hxx"
+// #include "routes/insert_member_route.hxx"
+// #include "routes/register_route.hxx"
+// #include "routes/login_route.hxx"
+// #include "routes/send_message_route.hxx"
+// #include "routes/chats_route.hxx"
+// #include "routes/user_info_route.hxx"
+// #include "routes/user_update_info_route.hxx"
+// #include "routes/ws_route.hxx"
+#include "routes/test_route.hxx"
 #include "websocket_controller.hxx"
 
 Server::Server() :
@@ -28,7 +29,8 @@ Server::Server() :
   ),
   secret(env_utils::getEnvVar("JWT_SECRET")),
   auth(),
-  routeManager(app, auth, dbHandle)
+  server(app),
+  routeManager(server, auth, dbHandle)
 {
   if (sodium_init() < 0) {
       throw std::runtime_error("libsodium init failed");
@@ -62,17 +64,18 @@ void Server::setupRoutes()
 {
   spdlog::info("setup routes start");
 
-  routeManager.addRoute<WSRoute>();
-  routeManager.addRoute<LoginRoute>();
-  routeManager.addRoute<RegisterRoute>();
-  routeManager.addRoute<SendMessageRoute>();
-  routeManager.addRoute<ChatsRoute>();
-  routeManager.addRoute<ChatsMessagesRoute>();
-  routeManager.addRoute<CreateChatRoute>();
-  routeManager.addRoute<InsertMemberRoute>();
-  routeManager.addRoute<DeleteMessageRoute>();
-  routeManager.addRoute<UserInfoRoute>();
-  routeManager.addRoute<UserUpdateInfoRoute>();
+  // routeManager.addRoute<WSRoute>();
+  // routeManager.addRoute<LoginRoute>();
+  // routeManager.addRoute<RegisterRoute>();
+  // routeManager.addRoute<SendMessageRoute>();
+  // routeManager.addRoute<ChatsRoute>();
+  // routeManager.addRoute<ChatsMessagesRoute>();
+  // routeManager.addRoute<CreateChatRoute>();
+  // routeManager.addRoute<InsertMemberRoute>();
+  // routeManager.addRoute<DeleteMessageRoute>();
+  // routeManager.addRoute<UserInfoRoute>();
+  // routeManager.addRoute<UserUpdateInfoRoute>();
+  routeManager.addRoute<TestRoute>();
 
   routeManager.setupRoutes();
 }

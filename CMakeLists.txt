@@ -22,14 +22,13 @@ add_library(wzq_core STATIC ${CORE_SRC})
 target_include_directories(wzq_core PRIVATE ${CMAKE_SOURCE_DIR} ${CMAKE_SOURCE_DIR}/core ${LIBS}/crow/include/ ${LIBS}/jwt-cpp/include/ ${PostgreSQL_INCLUDE_DIRS} ${LIBSODIUM_INCLUDE_DIR})
 target_link_libraries(wzq_core PRIVATE spdlog fmt pqxx ${ARGON2_LIB} nlohmann_json OpenSSL::SSL OpenSSL::Crypto ${PostgreSQL_LIBRARIES} ${LIBSODIUM_LIBRARY})
 
-
-file(GLOB ROUTES_SRC "${CMAKE_SOURCE_DIR}/routes/*.cxx")
+# file(GLOB ROUTES_SRC "${CMAKE_SOURCE_DIR}/routes/*.cxx")
 
 add_executable(wzq-message-server
   server.cxx
   env_utils.cxx
   crow_core_adapter.cxx
-  ${ROUTES_SRC}
+  # ${ROUTES_SRC}
 )
 
 target_compile_options(wzq-message-server PRIVATE -Wno-deprecated-declarations)
