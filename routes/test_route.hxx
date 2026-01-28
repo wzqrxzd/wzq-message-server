@@ -6,7 +6,7 @@
 class TestRoute : public Route
 {
   public:
-    TestRoute(AuthService& auth, Database& db) : Route("/test", http::Method::POST, auth, db) {}
+    TestRoute(RouteContext context) : Route(RouteInfo("/test", http::Method::POST), context) {}
     std::unique_ptr<http::Response> handleRequest(const http::Request& req) override
     {
       http::CoreResponse response;

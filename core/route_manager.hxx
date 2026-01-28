@@ -4,7 +4,8 @@
 #include "auth_service.hxx"
 #include "route.hxx"
 #include "types/WebServer.hxx"
-#include "websocket_controller.hxx"
+#include "websocket_notify_controller.hxx"
+#include <spdlog/spdlog.h>
 
 template <typename T>
 concept RouteConcept = requires(T t, const http::Request& req) {
@@ -12,9 +13,12 @@ concept RouteConcept = requires(T t, const http::Request& req) {
 };
 
 template <typename T>
-concept WsConcept = requires(T t) {
-  { t.isWebSocket() } -> std::same_as<void>;
+concept WebsocketRouteConcept = requires(T t, std::shared_ptr<WsClient> client, const std::string_view& sv) {
+  { t.onOpen(client) } -> std::same_as<void>;
+  { t.onMessage(client, sv) } -> std::same_as<void>;
+  { t.onClose(client, sv) } -> std::same_as<void>;
 };
+
 
 class RouteManager {
   public:
@@ -23,23 +27,34 @@ class RouteManager {
     void setupRoutes();
     template <RouteConcept T>
     void addRoute() {
-      std::unique_ptr<Route> ptr = nullptr;
+      RouteContext context(db, auth, wsController);
 
-      if constexpr(WsConcept<T>) {
-        ptr = std::make_unique<T>(wsController, auth, db);
-      } else {
-        ptr = std::make_unique<T>(auth, db);
-      }
+      std::unique_ptr ptr = std::make_unique<T>(context);
+
+      spdlog::debug("added route: {}", ptr->info.path);
 
       routes.push_back(std::move(ptr));
     };
+
+    template <WebsocketRouteConcept T>
+    void addWebsocketRoute() {
+      RouteContext context(db, auth, wsController);
+
+      std::unique_ptr ptr = std::make_unique<T>(context);
+
+      spdlog::debug("added websocket route: {}", ptr->path);
+
+      websocketRoutes.push_back(std::move(ptr));
+    }
+
   private:
     WebServer& server;
     AuthService& auth;
     Database& db;
-    WebsocketController wsController;
+    WebsocketNotifyController wsController;
 
     std::vector<std::unique_ptr<Route>> routes;
+    std::vector<std::unique_ptr<WebsocketRoute>> websocketRoutes;
 };
 
 #endif

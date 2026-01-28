@@ -1,12 +1,24 @@
 #include "auth_service.hxx"
 #include <sodium.h>
-#include "env_utils.hxx"
+#include "error.hxx"
 #include "jwt-cpp/jwt.h"
-#include "utils.hxx"
 #include <argon2.h>
 #include <spdlog/spdlog.h>
 
-AuthService::AuthService() : secret(env_utils::getEnvVar("JWT_SECRET")) {}
+std::string getEnvVar(const char* key) {
+    const char* value = std::getenv(key);
+    if (!value) {
+        throw std::runtime_error(std::string("Missing environment variable: ") + key);
+    }
+    return value;
+}
+
+inline std::string getTokenFromRequest(const http::Request& req)
+{
+  return std::string(req.getHeader("Authorization").value_or("")).substr(7);
+}
+
+AuthService::AuthService() : secret(getEnvVar("JWT_SECRET")) {}
 
 std::string AuthService::hashPassword(const std::string& password)
 {

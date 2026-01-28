@@ -18,7 +18,7 @@
 // #include "routes/user_update_info_route.hxx"
 // #include "routes/ws_route.hxx"
 #include "routes/test_route.hxx"
-#include "websocket_controller.hxx"
+#include "routes/test_ws_route.hxx"
 
 Server::Server() :
   dbHandle(
@@ -28,8 +28,8 @@ Server::Server() :
     4
   ),
   secret(env_utils::getEnvVar("JWT_SECRET")),
-  auth(),
   server(app),
+  auth(),
   routeManager(server, auth, dbHandle)
 {
   if (sodium_init() < 0) {
@@ -76,6 +76,7 @@ void Server::setupRoutes()
   // routeManager.addRoute<UserInfoRoute>();
   // routeManager.addRoute<UserUpdateInfoRoute>();
   routeManager.addRoute<TestRoute>();
+  routeManager.addWebsocketRoute<TestWebsocketRoute>();
 
   routeManager.setupRoutes();
 }

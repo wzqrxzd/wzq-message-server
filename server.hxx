@@ -1,9 +1,10 @@
 #ifndef SERVER_HXX
 #define SERVER_HXX
 
+#include "adapters/crow/crow_server.hxx"
 #include "auth_service.hxx"
-#include "crow_core_adapter.hxx"
 #include "database.hxx"
+#include "crow.h"
 #include "crow/middlewares/cors.h"
 #include "route.hxx"
 #include "route_manager.hxx"

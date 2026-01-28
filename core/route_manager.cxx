@@ -1,19 +1,33 @@
 #include "route_manager.hxx"
 #include <spdlog/spdlog.h>
-#include "utils.hxx"
 
-RouteManager::RouteManager(WebServer& server, AuthService& auth, Database& db) : server(server), auth(auth), db(db), wsController() {}
+RouteManager::RouteManager(WebServer& server, AuthService& auth, Database& db) : server(server), auth(auth), db(db){}
 
 void RouteManager::setupRoutes()
 {
   for (const auto& route : routes)
   {
      server.addRoute(
-         route->path,
-         route->method,
+         route->info.path,
+         route->info.method,
          [handler = route.get()](const http::Request& req) {
             return handler->handleRequest(req);
          }
      );
+  }
+  for (const auto& route : websocketRoutes)
+  {
+    server.addWebsocketRoute(
+        route->path,
+        [handler = route.get()](std::shared_ptr<WsClient> client) {
+          handler->onOpen(client);
+        },
+        [handler = route.get()](std::shared_ptr<WsClient> client, const std::string_view& sv) {
+          handler->onMessage(client, sv);
+        },
+        [handler = route.get()](std::shared_ptr<WsClient> client, const std::string_view& sv) {
+          handler->onClose(client, sv);
+        }
+    );
   }
 }

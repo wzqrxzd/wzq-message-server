@@ -1,35 +1,48 @@
 #ifndef ROUTE_HXX
 #define ROUTE_HXX
 
-#include "crow/middlewares/cors.h"
 #include "database.hxx"
 #include "auth_service.hxx"
-#include "crow.h"
-#include "websocket_controller.hxx"
+#include "websocket_notify_controller.hxx"
+
+struct RouteInfo
+{
+  std::string path;
+  http::Method method;
+};
+
+struct RouteContext
+{
+  Database& dbHandle;
+  AuthService& auth;
+  WebsocketNotifyController& ws;
+};
 
 class Route
 {
   public:
-    Route(const std::string& path, const http::Method& method, AuthService& auth, Database& db) : path(path), method(method), dbHandle(db), auth(auth) {}
+    Route(RouteInfo info, RouteContext context) : info(info), context(context) {}
     virtual std::unique_ptr<http::Response> handleRequest(const http::Request& req) = 0;
     virtual ~Route() = default;
   protected:
     friend class RouteManager;
 
-    Database& dbHandle;
-    AuthService& auth;
-
-    std::string path;
-    http::Method method;
+    RouteInfo info;
+    RouteContext context;
 };
 
-class WsAccessRoute : public Route
+class WebsocketRoute
 {
   public:
-    WsAccessRoute(const std::string& path, const http::Method& method, WebsocketController& ws, AuthService& auth, Database& db) : Route(path, method, auth, db), wsController(ws){}
-    void isWebSocket(){};
-  protected:
-    WebsocketController& wsController;
+    WebsocketRoute(const std::string& path, RouteContext context) : path(path), context(context) {}
+    virtual void onOpen(std::shared_ptr<WsClient> client) = 0;
+    virtual void onMessage(std::shared_ptr<WsClient> client, const std::string_view& message) = 0;
+    virtual void onClose(std::shared_ptr<WsClient> client, const std::string_view& reason) = 0;
+  private:
+    friend class RouteManager;
+
+    const std::string path;
+    RouteContext context;
 };
 
 #endif
