@@ -1,7 +1,7 @@
 #include "route_manager.hxx"
 #include <spdlog/spdlog.h>
 
-RouteManager::RouteManager(WebServer& server, AuthService& auth, Database& db) : server(server), auth(auth), db(db){}
+RouteManager::RouteManager(WebServer& server, AuthService& auth, Database<pqxx::connection>& db) : server(server), auth(auth), db(db){}
 
 void RouteManager::setupRoutes()
 {

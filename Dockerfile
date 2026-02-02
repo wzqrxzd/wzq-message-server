@@ -26,4 +26,5 @@ EXPOSE 8080
 
 RUN cmake -S . -B build
 COPY .env ./build
-RUN cd build && make -j$(nproc)
+ENV JWT_SECRET=test
+RUN cd build && make -j$(nproc) && ctest -V

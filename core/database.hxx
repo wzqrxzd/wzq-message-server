@@ -7,16 +7,25 @@
 #include <condition_variable>
 #include <cstdint>
 
+template <typename Connection>
+concept ConnectionConcept = requires(Connection conn, const std::string test) {
+  { conn.prepare(test, test) } -> std::same_as<void>;
+};
+
+template <ConnectionConcept Connection>
+class ConnectionGuard;
+
+template <ConnectionConcept Connection>
 class Database
 {
   public:
-    using dbConnection = std::shared_ptr<pqxx::connection>;
+    using dbConnection = std::shared_ptr<Connection>;
 
     Database(const std::string& user, const std::string& name, const std::string& pass, uint16_t poolSize);
     ~Database();
 
   private:
-    friend class ConnectionGuard;
+    friend ConnectionGuard<Connection>;
 
     dbConnection acquireConnection();
     void releaseConnection(dbConnection conn);
@@ -30,17 +39,22 @@ class Database
     const std::string connectionString;
 };
 
+template <ConnectionConcept Connection>
 class ConnectionGuard
 {
   public:
-    ConnectionGuard(Database& db) : db(db), conn(db.acquireConnection()) {};
+    ConnectionGuard(Database<Connection>& db) : db(db), conn(db.acquireConnection()) {};
     ~ConnectionGuard() { db.releaseConnection(conn); };
-    pqxx::connection& get() { return *conn; }
-    pqxx::connection* operator->() { return conn.get(); }
+    Connection& get() { return *conn; }
+    Connection* operator->() { return conn.get(); }
   private:
-    Database& db;
-    Database::dbConnection conn;
+    Database<Connection>& db;
+    Database<Connection>::dbConnection conn;
 };
 
+template <ConnectionConcept Connection>
+ConnectionGuard(Database<Connection>&) -> ConnectionGuard<Connection>;
+
+#include "database.inl"
 
 #endif

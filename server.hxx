@@ -24,7 +24,7 @@ class Server
     adapter::CrowServer server;
     AuthService auth;
     RouteManager routeManager;
-    Database dbHandle;
+    Database<pqxx::connection> dbHandle;
 
     const int port{8080};
 

@@ -22,7 +22,7 @@ concept WebsocketRouteConcept = requires(T t, std::shared_ptr<WsClient> client, 
 
 class RouteManager {
   public:
-    RouteManager(WebServer& server, AuthService& auth, Database& db);
+    RouteManager(WebServer& server, AuthService& auth, Database<pqxx::connection>& db);
 
     void setupRoutes();
     template <RouteConcept T>
@@ -50,7 +50,7 @@ class RouteManager {
   private:
     WebServer& server;
     AuthService& auth;
-    Database& db;
+    Database<pqxx::connection>& db;
     WebsocketNotifyController wsController;
 
     std::vector<std::unique_ptr<Route>> routes;

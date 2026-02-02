@@ -1,10 +1,10 @@
-#include "database.hxx"
 #include <memory>
 #include <cstdint>
 #include <mutex>
 #include <stdexcept>
 
-Database::Database(const std::string& user, const std::string& name, const std::string& pass, const uint16_t poolSize)
+template <ConnectionConcept Connection>
+Database<Connection>::Database(const std::string& user, const std::string& name, const std::string& pass, const uint16_t poolSize)
   : connectionString(
   "dbname=" + name +
   " user=" + user +
@@ -12,12 +12,18 @@ Database::Database(const std::string& user, const std::string& name, const std::
   " host=db port=5432")
 {
   for (int i{0}; i<poolSize; i++)
-    connPool.push(prepareDB(std::make_shared<pqxx::connection>(connectionString)));
+    connPool.push(prepareDB(std::make_shared<Connection>(connectionString)));
 }
 
-Database::~Database() = default;
 
-Database::dbConnection Database::acquireConnection()
+
+template <ConnectionConcept Connection>
+Database<Connection>::~Database() = default;
+
+
+
+template <ConnectionConcept Connection>
+Database<Connection>::dbConnection Database<Connection>::acquireConnection()
 {
   std::unique_lock<std::mutex> lock(mtx);
   cv.wait(lock, [&] { return !connPool.empty(); });
@@ -27,7 +33,8 @@ Database::dbConnection Database::acquireConnection()
   return conn;
 }
 
-void Database::releaseConnection(Database::dbConnection conn)
+template <ConnectionConcept Connection>
+void Database<Connection>::releaseConnection(Database<Connection>::dbConnection conn)
 {
   {
     std::unique_lock<std::mutex> lock(mtx);
@@ -36,7 +43,8 @@ void Database::releaseConnection(Database::dbConnection conn)
   cv.notify_all();
 }
 
-Database::dbConnection Database::prepareDB(Database::dbConnection conn)
+template <ConnectionConcept Connection>
+Database<Connection>::dbConnection Database<Connection>::prepareDB(Database<Connection>::dbConnection conn)
 {
   conn->prepare("insert_user", "INSERT INTO users(username, password_hash, name, description) VALUES($1, $2, $3, $4)");
   conn->prepare("find_user", "SELECT password_hash FROM users WHERE username=$1");

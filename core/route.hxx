@@ -13,7 +13,7 @@ struct RouteInfo
 
 struct RouteContext
 {
-  Database& dbHandle;
+  Database<pqxx::connection>& dbHandle;
   AuthService& auth;
   WebsocketNotifyController& ws;
 };
