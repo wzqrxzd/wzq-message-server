@@ -8,17 +8,10 @@
 #include <spdlog/spdlog.h>
 
 template <typename T>
-concept RouteConcept = requires(T t, const http::Request& req) {
-  { t.handleRequest(req) } -> std::same_as<std::unique_ptr<http::Response>>;
-};
+concept RouteConcept = std::is_base_of_v<Route, T>;
 
 template <typename T>
-concept WebsocketRouteConcept = requires(T t, std::shared_ptr<WsClient> client, const std::string_view& sv) {
-  { t.onOpen(client) } -> std::same_as<void>;
-  { t.onMessage(client, sv) } -> std::same_as<void>;
-  { t.onClose(client, sv) } -> std::same_as<void>;
-};
-
+concept WebsocketRouteConcept = std::is_base_of_v<WebsocketRoute, T>;
 
 class RouteManager {
   public:

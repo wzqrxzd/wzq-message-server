@@ -2,23 +2,14 @@
 #define WEBSOCKET_NOTIFY_CONTROLLER_HXX
 
 #include "types/Message.hxx"
-#include <functional>
+#include "types/Chat.hxx"
+#include "commands/command.hxx"
 #include <memory>
 #include <unordered_map>
 #include <unordered_set>
+#include "types/WebsocketClient.hxx"
 
-class WsClient
-{
-  public:
-    virtual ~WsClient() = default;
-    virtual int getUserId() = 0;
-    virtual void sendText(const std::string_view& sv) = 0;
-    virtual std::unordered_set<int> getChatIds() = 0;
-    virtual void insertChatId(const int& id) = 0;
-    virtual void eraseChatId(const int& id) = 0;
-};
-
-class [[nodiscard]] WebsocketNotifyController
+class WebsocketNotifyController
 {
   public:
     WebsocketNotifyController();
@@ -26,13 +17,15 @@ class [[nodiscard]] WebsocketNotifyController
     void addClient(std::shared_ptr<WsClient> client);
     void deleteClient(std::shared_ptr<WsClient> client);
 
-    void notifyNewMessage(Message& msg);
-    void notifyNewChat(const int& chatId, const int& userId, const std::string& chatName);
-    void notifyDeleteChat(const int& chatId, const int& userId);
+    void dispatch(std::unique_ptr<Command> command);
+
+    void notifyNewMessage(const Message& msg);
+    void notifyNewChat(const Chat& chat);
+    void notifyDeleteChat(const Chat& chat);
 
   private:
     std::mutex mtx;
-    std::unordered_map<int, std::shared_ptr<WsClient>> clients;
+    std::unordered_map<UserId, std::shared_ptr<WsClient>> clients;
 };
 
 #endif
