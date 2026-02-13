@@ -16,7 +16,7 @@ std::string_view adapter::CrowResponse::body() const
   return res.body;
 }
 
-void adapter::CrowResponse::setCode(const int& code)
+void adapter::CrowResponse::setCode(const int code)
 {
   res.code = code;
 }

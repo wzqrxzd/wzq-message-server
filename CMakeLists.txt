@@ -50,13 +50,15 @@ include(GoogleTest)
 gtest_discover_tests(wzq_core_tests)
 
 file(GLOB CROW_ADAPTERS_SRC "${CMAKE_SOURCE_DIR}/adapters/crow/*.cxx")
-# file(GLOB ROUTES_SRC "${CMAKE_SOURCE_DIR}/routes/*.cxx")
+file(GLOB REPOSITORIES_ADAPTERS_SRC "${CMAKE_SOURCE_DIR}/adapters/repository/*.cxx")
+file(GLOB ROUTES_SRC "${CMAKE_SOURCE_DIR}/routes/*.cxx")
 
 add_executable(wzq-message-server
   server.cxx
   env_utils.cxx
   ${CROW_ADAPTERS_SRC}
-  # ${ROUTES_SRC}
+  ${REPOSITORIES_ADAPTERS_SRC}
+  ${ROUTES_SRC}
 )
 
 target_compile_options(wzq-message-server PRIVATE -Wno-deprecated-declarations)

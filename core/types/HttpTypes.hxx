@@ -25,7 +25,7 @@ namespace http {
     virtual int code() const = 0;
     virtual std::string_view body() const = 0;
 
-    virtual void setCode(const int& code) = 0;
+    virtual void setCode(const int code) = 0;
     virtual void setBody(const std::string_view& sv) = 0;
   };
 
@@ -42,7 +42,7 @@ namespace http {
       int code() const override { return responseCode; };
       std::string_view body() const override { return responseBody; };
 
-      void setCode(const int& code) override { responseCode = code; };
+      void setCode(const int code) override { responseCode = code; };
       void setBody(const std::string_view& sv) override { responseBody = std::string(sv); };
     private:
       int responseCode = 200;

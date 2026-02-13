@@ -10,15 +10,17 @@
 // #include "routes/create_chat_route.hxx"
 // #include "routes/delete_message_route.hxx"
 // #include "routes/insert_member_route.hxx"
-// #include "routes/register_route.hxx"
-// #include "routes/login_route.hxx"
+#include "routes/register_route.hxx"
+#include "routes/login_route.hxx"
 // #include "routes/send_message_route.hxx"
 // #include "routes/chats_route.hxx"
 // #include "routes/user_info_route.hxx"
 // #include "routes/user_update_info_route.hxx"
 // #include "routes/ws_route.hxx"
-#include "routes/test_route.hxx"
-#include "routes/test_ws_route.hxx"
+#include "routes/notify_ws_route.hxx"
+
+#include "repositories/user_repository.hxx"
+#include "repositories/chat_repository.hxx"
 
 Server::Server() :
   dbHandle(
@@ -27,10 +29,13 @@ Server::Server() :
     env_utils::getEnvVar("POSTGRES_PASSWORD"),
     4
   ),
+  userRepository(dbHandle),
+  chatRepository(dbHandle),
+
   secret(env_utils::getEnvVar("JWT_SECRET")),
   server(app),
   auth(),
-  routeManager(server, auth, dbHandle)
+  routeManager(server, auth, dbHandle, static_cast<UserRepository&>(userRepository), static_cast<ChatRepository&>(chatRepository))
 {
   if (sodium_init() < 0) {
       throw std::runtime_error("libsodium init failed");
@@ -75,8 +80,10 @@ void Server::setupRoutes()
   // routeManager.addRoute<DeleteMessageRoute>();
   // routeManager.addRoute<UserInfoRoute>();
   // routeManager.addRoute<UserUpdateInfoRoute>();
-  routeManager.addRoute<TestRoute>();
-  routeManager.addWebsocketRoute<TestWebsocketRoute>();
+
+  routeManager.addWebsocketRoute<NotifyWebsocketRoute>();
+  routeManager.addRoute<LoginRoute>();
+  routeManager.addRoute<RegisterRoute>();
 
   routeManager.setupRoutes();
 }

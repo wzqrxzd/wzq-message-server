@@ -2,6 +2,8 @@
 #define SERVER_HXX
 
 #include "adapters/crow/crow_server.hxx"
+#include "adapters/repository/user_repository_adapter.hxx"
+#include "adapters/repository/chat_repository_adapter.hxx"
 #include "auth_service.hxx"
 #include "database.hxx"
 #include "crow.h"
@@ -23,6 +25,8 @@ class Server
     crow::App<crow::CORSHandler> app;
     adapter::CrowServer server;
     AuthService auth;
+    UserRepositoryAdapter userRepository;
+    ChatRepositoryAdapter chatRepository;
     RouteManager routeManager;
     Database<pqxx::connection> dbHandle;
 

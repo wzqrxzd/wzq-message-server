@@ -14,7 +14,7 @@ struct adapter::CrowResponse : public http::Response
     int code() const override;
     std::string_view body() const override;
 
-    void setCode(const int& code) override;
+    void setCode(const int code) override;
     void setBody(const std::string_view& sv) override;
 
     crow::response getResponse();

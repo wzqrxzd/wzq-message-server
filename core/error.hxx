@@ -3,6 +3,7 @@
 
 #include <exception>
 #include <fmt/format.h>
+#include <nlohmann/json.hpp>
 #include <string>
 #include <unordered_map>
 
@@ -35,6 +36,12 @@ class BaseException : public std::exception {
     std::string message;
 };
 
+class UserNotExistsException : public BaseException
+{
+  public:
+    explicit UserNotExistsException(const std::string& message) : BaseException(message) {};
+};
+
 class AuthException : public BaseException {
   public:
     explicit AuthException(const AuthError& code, const std::string& message = "") : BaseException(ErrorCodes.at(code) + fmt::format(" ({})", message)), code(code){}
@@ -47,6 +54,7 @@ class JsonException : public BaseException {
   public:
     explicit JsonException(const std::string& message) : BaseException(message) {}
 };
+
 
 // template <typename T>
 // T getJsonField(const crow::json::rvalue& body_json, const std::string& field)
