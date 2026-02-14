@@ -21,6 +21,7 @@
 
 #include "repositories/user_repository.hxx"
 #include "repositories/chat_repository.hxx"
+#include "routes/user_info_route.hxx"
 
 Server::Server() :
   dbHandle(
@@ -84,6 +85,7 @@ void Server::setupRoutes()
   routeManager.addWebsocketRoute<NotifyWebsocketRoute>();
   routeManager.addRoute<LoginRoute>();
   routeManager.addRoute<RegisterRoute>();
+  routeManager.addRoute<UserInfoRoute>();
 
   routeManager.setupRoutes();
 }

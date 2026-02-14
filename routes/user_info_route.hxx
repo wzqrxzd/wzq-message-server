@@ -1,19 +1,21 @@
-#ifndef USER_INFO_ROUTE
-#define USER_INFO_ROUTE
+#ifndef USER_UDPATE_INFO_ROUTE_HXX
+#define USER_UPDATE_INFO_ROUTE_HXX
 
+#include "repositories/user_repository.hxx"
 #include "route.hxx"
-#include "types/UserFields.hxx"
-#include "websocket_controller.hxx"
-#include "crow.h"
 
-class UserInfoRoute : public WsAccessRoute
+class UserInfoRoute : public VariadicRoute<int>
 {
   public:
-    explicit UserInfoRoute(crow::App<crow::CORSHandler>& app, WebsocketController& ws, AuthService& auth, Database& db);
-    void setup() override;
+    using Deps = std::tuple<UserRepository&>;
+
+    UserInfoRoute(RouteContext context, UserRepository& userRepository) : VariadicRoute(RouteInfo("/user/<int>", http::Method::GET), context), userRepository(userRepository) {}
+
+    std::unique_ptr<http::Response> handleTypedRequest(const http::Request& req, int userId) override;
   private:
-    UserFields getUserFieldsById(const int& userId);
-    crow::response buildUserInfoResponse(const UserFields& requestedUserInfo);
+    std::unique_ptr<http::Response> buildRouteResponse(const UserFields& user);
+
+    const UserRepository& userRepository;
 };
 
 #endif
