@@ -19,7 +19,7 @@ std::string_view adapter::CrowRequest::body() const
   return req.body;
 }
 
-std::optional<std::string_view> adapter::CrowRequest::getHeader(const std::string_view& key) const
+std::optional<std::string> adapter::CrowRequest::getHeader(const std::string_view key) const
 {
   auto it = req.headers.find(std::string(key));
   if (it == req.headers.end())

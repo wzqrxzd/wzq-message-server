@@ -14,6 +14,10 @@ class ChatRepositoryAdapter : public ChatRepository
 
     void insertUserToChat(const int userId, const int chatId) const override;
     void removeUserFromChat(const int userId, const int chatId) const override;
+
+    void ensureUserInChat(const int userId, const int chatId) const override;
+
+    std::vector<Chat> getUserChats(const int chatId) const override;
   private:
     Database<pqxx::connection>& dbHandle;
 };

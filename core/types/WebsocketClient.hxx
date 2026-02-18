@@ -10,6 +10,7 @@ class WsClient
   public:
     virtual ~WsClient() = default;
 
+    virtual void setUserId(const int userId) = 0;
     virtual int getUserId() = 0;
 
     virtual void sendText(const std::string_view& sv) = 0;

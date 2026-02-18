@@ -15,7 +15,7 @@ namespace http {
     virtual std::string_view url() const = 0;
     virtual std::string_view body() const = 0;
 
-    virtual std::optional<std::string_view> getHeader(const std::string_view& key) const = 0;
+    virtual std::optional<std::string> getHeader(const std::string_view key) const = 0;
   };
 
   struct Response

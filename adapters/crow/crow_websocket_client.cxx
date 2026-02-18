@@ -26,3 +26,8 @@ std::unordered_set<int> adapter::CrowWebsocketClient::getChatIds()
 {
   return chatIds;
 }
+
+void adapter::CrowWebsocketClient::setUserId(const int userId)
+{
+  this->userId = userId;
+}

@@ -14,6 +14,7 @@ class FakeClient : public WsClient
   public:
     FakeClient() {};
     int getUserId() override { return userId; }
+    void setUserId(const int userId) override { this->userId = userId; }
     void sendText(const std::string_view& sv) override {
       lastMessage = std::string(sv);
     }

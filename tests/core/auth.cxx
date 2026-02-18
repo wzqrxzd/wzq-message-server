@@ -19,7 +19,7 @@ struct TestRequest : public http::Request {
       return reqBody;
     };
 
-    std::optional<std::string_view> getHeader(const std::string_view& key) const override {
+    std::optional<std::string> getHeader(const std::string_view key) const override {
       auto it = headers.find(std::string(key));
       if (it == headers.end())
         return std::nullopt;

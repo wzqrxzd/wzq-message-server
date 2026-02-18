@@ -13,7 +13,7 @@ struct adapter::CrowRequest : public http::Request
     std::string_view url() const override;
     std::string_view body() const override;
 
-    std::optional<std::string_view> getHeader(const std::string_view& key) const override;
+    std::optional<std::string> getHeader(const std::string_view key) const override;
   private:
     const crow::request& req;
 };

@@ -1,46 +1,38 @@
-#include "routes/user_info_route.hxx"
-#include "route.hxx"
-#include "utils.hxx"
-#include <spdlog/spdlog.h>
+#include "user_info_route.hxx"
+#include "error.hxx"
 #include <fmt/format.h>
-#include "crow_core_adapter.hxx"
-#include "types/UserFields.hxx"
 
-UserInfoRoute::UserInfoRoute(crow::App<crow::CORSHandler>& app, WebsocketController& ws, AuthService& auth, Database& db) : WsAccessRoute(app, ws, auth, db) {}
-
-void UserInfoRoute::setup()
+std::unique_ptr<http::Response> UserInfoRoute::handleRequest(const http::Request& req)
 {
-  CROW_ROUTE(app, "/user/<int>").methods(crow::HTTPMethod::GET)([this](const crow::request& req, int userId){
-    return trySafe([&](){
-      std::string username = auth.authorize(adapter::CrowRequest(req));
-      UserFields requestedUserInfo = getUserFieldsById(userId);
+  context.auth.authorize(req);
 
-      return buildUserInfoResponse(requestedUserInfo);
-    });
-  });
+  const int userId = loadRequestedId(nlohmann::json::parse(req.body()));
+
+  const UserFields user = userRepository.getUserData(userId);
+
+  return buildRouteResponse(user);
 }
 
-UserFields UserInfoRoute::getUserFieldsById(const int& userId)
+std::unique_ptr<http::Response> UserInfoRoute::buildRouteResponse(const UserFields& user)
 {
-  ConnectionGuard DB(dbHandle);
-  pqxx::work W(DB.get());
-
-  pqxx::result R = W.exec_prepared("get_user_by_id", userId);
-  return UserFields (
-      R[0]["name"].as<std::string>(),
-      R[0]["description"].as<std::string>(),
-      R[0]["username"].as<std::string>()
-  );
-}
-
-crow::response UserInfoRoute::buildUserInfoResponse(const UserFields& requestedUserInfo)
-{
-  return json_response(200,
+  std::unique_ptr<http::CoreResponse> response = std::make_unique<http::CoreResponse>();
+  response->setCode(200);
+  response->setBody(
       fmt::format(R"({{"name":"{}","username":"{}","description":"{}","user_id":"{}"}})",
-        requestedUserInfo.username.value_or("").c_str(),
-        requestedUserInfo.name.value_or("").c_str(),
-        requestedUserInfo.description.value_or("").c_str(),
-        requestedUserInfo.id.value_or(-1)
+        user.name,
+        user.username,
+        user.description,
+        user.id
       )
   );
+
+  return std::move(response);
+}
+
+const int UserInfoRoute::loadRequestedId(const nlohmann::json& json)
+{
+  if (!json.contains("id"))
+    throw JsonException("Malformed Json");
+
+  return json["id"].get<int>();
 }

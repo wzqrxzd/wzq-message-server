@@ -18,6 +18,7 @@ void NotifyWebsocketRoute::onMessage(std::shared_ptr<WsClient> client, const std
         spdlog::debug("username: {}", username);
 
         int userId = userRepository.getUserId(username);
+        client->setUserId(userId);
         spdlog::debug("[Ws] username = {}, id = {}", username, userId);
 
         std::unordered_set<int> userChats = userRepository.getUserChats(userId);

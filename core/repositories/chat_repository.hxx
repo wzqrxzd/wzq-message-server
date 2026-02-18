@@ -2,6 +2,7 @@
 #define CHAT_REPOSITORY_HXX
 
 #include "types/Chat.hxx"
+#include <vector>
 
 class ChatRepository {
   public:
@@ -12,6 +13,10 @@ class ChatRepository {
 
     virtual void insertUserToChat(const int userId, const int chatId) const = 0;
     virtual void removeUserFromChat(const int userId, const int chatId) const = 0;
+
+    virtual void ensureUserInChat(const int userId, const int chatId) const = 0;
+
+    virtual std::vector<Chat> getUserChats(const int userId) const = 0;
 };
 
 #endif

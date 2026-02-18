@@ -1,19 +1,22 @@
 #ifndef USER_INFO_ROUTE
 #define USER_INFO_ROUTE
 
+#include "repositories/user_repository.hxx"
 #include "route.hxx"
-#include "types/UserFields.hxx"
-#include "websocket_controller.hxx"
-#include "crow.h"
+#include <nlohmann/json.hpp>
 
-class UserInfoRoute : public WsAccessRoute
+class UserInfoRoute : public Route
 {
   public:
-    explicit UserInfoRoute(crow::App<crow::CORSHandler>& app, WebsocketController& ws, AuthService& auth, Database& db);
-    void setup() override;
+    using Deps = std::tuple<UserRepository&>;
+
+    UserInfoRoute(RouteContext context, UserRepository& userRepository) : Route(RouteInfo("/user", http::Method::POST), context), userRepository(userRepository) {}
+
+    std::unique_ptr<http::Response> handleRequest(const http::Request& req) override;
   private:
-    UserFields getUserFieldsById(const int& userId);
-    crow::response buildUserInfoResponse(const UserFields& requestedUserInfo);
+    const int loadRequestedId(const nlohmann::json& body);
+    std::unique_ptr<http::Response> buildRouteResponse(const UserFields& user);
+    const UserRepository& userRepository;
 };
 
 #endif

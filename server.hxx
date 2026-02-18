@@ -2,6 +2,7 @@
 #define SERVER_HXX
 
 #include "adapters/crow/crow_server.hxx"
+#include "adapters/repository/message_repository_adapter.hxx"
 #include "adapters/repository/user_repository_adapter.hxx"
 #include "adapters/repository/chat_repository_adapter.hxx"
 #include "auth_service.hxx"
@@ -27,6 +28,7 @@ class Server
     AuthService auth;
     UserRepositoryAdapter userRepository;
     ChatRepositoryAdapter chatRepository;
+    MessageRepositoryAdapter messageRepository;
     RouteManager routeManager;
     Database<pqxx::connection> dbHandle;
 

@@ -48,6 +48,7 @@ bool AuthService::verifyPassword(const std::string& hash, const std::string& pas
 bool AuthService::authorizeRequest(const http::Request& req)
 {
   std::string authHeader = std::string(req.getHeader("Authorization").value_or(""));
+  spdlog::info("authHeader {}", authHeader);
   if (authHeader.empty())
     return false;
 

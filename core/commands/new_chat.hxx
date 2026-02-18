@@ -18,6 +18,16 @@ class NewChatCommand : public Command
         {"chat_name", chat.chatName}
       };
 
+      for (const auto& [id, user] : chat.usersId)
+      {
+        spdlog::info("Unfiltered id: {}", id);
+      }
+
+      for (const auto& [id, client]: clients)
+      {
+        spdlog::info("Clients id: {}", id);
+      }
+
       auto filterFunc = [&users = chat.usersId](const std::shared_ptr<WsClient>& client)
       {
         bool isFiltered = false;
@@ -31,6 +41,11 @@ class NewChatCommand : public Command
       };
 
       auto targets = filter(filterFunc, clients);
+
+      for (const auto& [id, user] : targets)
+      {
+        spdlog::info("Filtered id: {}", id);
+      }
 
       for (const auto& [id, client] : targets)
       {

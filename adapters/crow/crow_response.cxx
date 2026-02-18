@@ -4,6 +4,7 @@ adapter::CrowResponse::CrowResponse(std::unique_ptr<http::Response> response)
 {
   res.code = response->code();
   res.body = response->body();
+  res.set_header("Content-Type", "application/json");
 }
 
 int adapter::CrowResponse::code() const

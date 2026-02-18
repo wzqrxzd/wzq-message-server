@@ -3,6 +3,7 @@
 
 #include <spdlog/spdlog.h>
 
+#include "repositories/message_repository.hxx"
 #include "route.hxx"
 
 #include "auth_service.hxx"
@@ -28,7 +29,7 @@ concept WebsocketRouteConcept = std::is_base_of_v<WebsocketRoute, T> && HasDeps<
 
 class RouteManager {
   public:
-    RouteManager(WebServer& server, AuthService& auth, Database<pqxx::connection>& db, UserRepository& user, ChatRepository& chat);
+    RouteManager(WebServer& server, AuthService& auth, Database<pqxx::connection>& db, UserRepository& user, ChatRepository& chat, MessageRepository& message);
 
     void setupRoutes();
 
@@ -47,6 +48,7 @@ class RouteManager {
 
     UserRepository& userRepo;
     ChatRepository& chatRepo;
+    MessageRepository& messageRepo;
 
     WebServer& server;
     AuthService& auth;
@@ -62,6 +64,9 @@ inline UserRepository& RouteManager::getRepository<UserRepository&>() { return u
 
 template <>
 inline ChatRepository& RouteManager::getRepository<ChatRepository&>() { return chatRepo; }
+
+template <>
+inline MessageRepository& RouteManager::getRepository<MessageRepository&>() { return messageRepo; }
 
 template <typename T, std::size_t... Is>
 inline auto RouteManager::makeDepsTuple(std::index_sequence<Is...>)
@@ -87,7 +92,10 @@ void RouteManager::addRoute() {
       deps
   );
 
-  spdlog::debug("added route: {}", routePtr->info.path);
+  spdlog::debug("added route: {}, method: {}",
+    routePtr->info.path,
+    static_cast<int>(routePtr->info.method)
+  );
 
   routes.push_back(std::move(routePtr));
 };

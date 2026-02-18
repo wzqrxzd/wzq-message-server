@@ -1,16 +1,27 @@
-#ifndef INSERT_MEMBER_ROUTE
-#define INSERT_MEMBER_ROUTE
+#ifndef INSERT_MEMBER_ROUTE_HXX
+#define INSERT_MEMBER_ROUTE_HXX
 
+#include "repositories/chat_repository.hxx"
+#include "repositories/user_repository.hxx"
 #include "route.hxx"
-#include "types/UserFields.hxx"
-#include "websocket_controller.hxx"
-#include "crow.h"
 
-class InsertMemberRoute : public WsAccessRoute
+#include <nlohmann/json.hpp>
+
+class InsertMemberRoute : public Route
 {
   public:
-    explicit InsertMemberRoute(crow::App<crow::CORSHandler>& app, WebsocketController& ws, AuthService& auth, Database& db);
-    void setup() override;
+    using Deps = std::tuple<UserRepository&, ChatRepository&>;
+
+    InsertMemberRoute(RouteContext context, UserRepository& userRepository, ChatRepository& chatRepository)
+      : Route(RouteInfo("/chats/users", http::Method::POST), context), userRepository(userRepository), chatRepository(chatRepository) {}
+
+    std::unique_ptr<http::Response> handleRequest(const http::Request& req) override;
+  private:
+    std::pair<int, int> loadRequestData(const nlohmann::json& json);
+    std::unique_ptr<http::Response> buildRouteResponse();
+
+    const UserRepository& userRepository;
+    const ChatRepository& chatRepository;
 };
 
 #endif

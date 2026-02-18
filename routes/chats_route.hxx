@@ -1,15 +1,23 @@
-#ifndef CHAT_ROUTE
-#define CHAT_ROUTE
+#ifndef CHATS_ROUTE_HXX
+#define CHATS_ROUTE_HXX
 
+#include "repositories/chat_repository.hxx"
+#include "repositories/user_repository.hxx"
 #include "route.hxx"
-#include "websocket_controller.hxx"
-#include "crow.h"
 
-class ChatsRoute : public WsAccessRoute
+class ChatsRoute : public Route
 {
   public:
-    explicit ChatsRoute(crow::App<crow::CORSHandler>& app, WebsocketController& ws, AuthService& auth, Database& db);
-    void setup() override;
+    using Deps = std::tuple<UserRepository&, ChatRepository&>;
+
+    ChatsRoute(RouteContext context, UserRepository& userRepository, ChatRepository& chatRepository) : Route(RouteInfo("/chats", http::Method::GET), context), userRepository(userRepository), chatRepository(chatRepository) {}
+
+    std::unique_ptr<http::Response> handleRequest(const http::Request& req);
+  private:
+    std::unique_ptr<http::Response> buildRouteResponse(const std::vector<Chat>& chats);
+
+    UserRepository& userRepository;
+    ChatRepository& chatRepository;
 };
 
 #endif

@@ -10,7 +10,9 @@ class adapter::CrowWebsocketClient : public WsClient
   public:
     CrowWebsocketClient(crow::websocket::connection* conn);
 
+    void setUserId(const int userId) override;
     int getUserId() override;
+
     void sendText(const std::string_view& sv) override;
     std::unordered_set<int> getChatIds() override;
 
