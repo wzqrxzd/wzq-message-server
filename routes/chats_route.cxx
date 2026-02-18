@@ -1,39 +1,32 @@
-#include "routes/chats_route.hxx"
-#include "route.hxx"
-#include "utils.hxx"
-#include <spdlog/spdlog.h>
-#include <fmt/format.h>
+#include "chats_route.hxx"
+#include <nlohmann/json.hpp>
 
-ChatsRoute::ChatsRoute(crow::App<crow::CORSHandler>& app, WebsocketController& ws, AuthService& auth, Database& db) : WsAccessRoute(app, ws, auth, db) {}
-
-void ChatsRoute::setup()
+std::unique_ptr<http::Response> ChatsRoute::handleRequest(const http::Request& req)
 {
-  CROW_ROUTE(app, "/chats").methods(crow::HTTPMethod::GET)([this](const crow::request& req){
-    return trySafe([&](){
-      if (!auth.authorizeRequest(req))
-        throw AuthException(AuthError::TokenExpired);
-      std::string token = req.get_header_value("Authorization").substr(7);
-      std::string username = auth.getUsernameFromToken(token);
+  const std::string username = context.auth.authorize(req);
+  const int userId = userRepository.getUserId(username);
 
-      ConnectionGuard DB(dbHandle);
+  const std::vector<Chat> userChats = chatRepository.getUserChats(userId);
 
-      pqxx::work W(DB.get());
-      pqxx::result R_request_userId = W.exec_prepared("find_user_by_username", username);
-      int userId = R_request_userId[0]["id"].as<int>();
+  return buildRouteResponse(userChats);
+}
 
-      nlohmann::json res_json = nlohmann::json::array();
 
-      pqxx::result R = W.exec_prepared("get_user_chats", userId);
+std::unique_ptr<http::Response> ChatsRoute::buildRouteResponse(const std::vector<Chat>& chats)
+{
+  nlohmann::json responseJson = nlohmann::json::array();
 
-      for (auto row : R)
-      {
-        res_json.push_back({
-          {"chat_id", row["id"].as<int>()},
-          {"chat_name", row["name"].c_str()}
-        });
-      }
-
-      return json_response(200, res_json);
+  for (const auto& chat : chats)
+  {
+    responseJson.push_back({
+        {"chat_id", chat.chatId},
+        {"chat_name", chat.chatName}
     });
-  });
+  }
+
+  std::unique_ptr<http::CoreResponse> response = std::make_unique<http::CoreResponse>();
+  response->setCode(200);
+  response->setBody(responseJson.dump());
+
+  return std::move(response);
 }

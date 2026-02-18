@@ -1,65 +1,43 @@
 #include "register_route.hxx"
 #include "error.hxx"
-#include "types/UserFields.hxx"
-#include "utils.hxx"
-#include <spdlog/spdlog.h>
-#include <fmt/format.h>
+#include <nlohmann/json.hpp>
 
-RegisterRoute::RegisterRoute(crow::App<crow::CORSHandler>& app, AuthService& auth, Database& db) : Route(app, auth, db) {}
-
-void RegisterRoute::setup()
+std::unique_ptr<http::Response> RegisterRoute::handleRequest(const http::Request& req)
 {
-  CROW_ROUTE(app, "/register").methods(crow::HTTPMethod::POST)([this](const crow::request& req){
-    return trySafe([&](){
-      UserFields user = loadUserData(req);
-      user.password = auth.hashPassword(user.password.value());
+  UserFields user = loadUserData(req);
+  user.password = context.auth.hashPassword(user.password);
 
-      ensureUserNotExist(user.username.value());
-      insertUserToDB(user);
+  userRepository.ensureUserNotExists(user.username);
 
-      auto token = auth.generateJWT(user.username.value());
+  userRepository.createUser(user);
 
-      return buildRegisterRouteResponse(token); 
-    });
-  });
+  const std::string token = context.auth.generateJWT(user.username);
+
+  return buildRegisterRouteResponse(token);
 }
 
-void RegisterRoute::ensureUserNotExist(const std::string& username)
+UserFields RegisterRoute::loadUserData(const http::Request& req)
 {
-  ConnectionGuard DB(dbHandle);
-  pqxx::work worker(DB.get());
+  auto bodyJson = nlohmann::json::parse(req.body());
 
-  pqxx::result result = worker.exec_prepared("find_user_by_username", username);
-
-  if (!result.empty())
-    throw AuthException(AuthError::UserAlreadyExist);
-}
-
-UserFields RegisterRoute::loadUserData(const crow::request& req)
-{
-  auto bodyJson = crow::json::load(req.body);
+  if (!bodyJson.contains("name") || !bodyJson.contains("username") || !bodyJson.contains("password"))
+    throw JsonException("Malformed Json");
 
   UserFields user;
-
-  user.name = getJsonField<std::string>(bodyJson, "name");
-  user.username = getJsonField<std::string>(bodyJson, "username");
-  user.password = getJsonField<std::string>(bodyJson, "password");
-  user.description = "";
+  user.name = bodyJson["name"];
+  user.username = bodyJson["username"];
+  user.password = bodyJson["password"];
 
   return user;
 }
 
-// User.password must be hashed
-void RegisterRoute::insertUserToDB(const UserFields& user)
+std::unique_ptr<http::Response> RegisterRoute::buildRegisterRouteResponse(const std::string& token)
 {
-  ConnectionGuard DB(dbHandle);
-  pqxx::work worker(DB.get());
+  std::unique_ptr<http::CoreResponse> response = std::make_unique<http::CoreResponse>();
+  response->setCode(200);
+  response->setBody(
+    fmt::format(R"({{"status":"registered", "token":"{}"}})", token)
+  );
 
-  worker.exec_prepared("insert_user", user.username, user.password, user.name, user.description);
-  worker.commit();
-}
-
-inline crow::response RegisterRoute::buildRegisterRouteResponse(const std::string& token)
-{
-  return json_response(200, fmt::format(R"({{"status":"registered", "token":"{}"}})", token));
+  return std::move(response);
 }

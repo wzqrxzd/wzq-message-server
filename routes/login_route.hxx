@@ -1,21 +1,21 @@
-#ifndef LOGIN_ROUTE
-#define LOGIN_ROUTE
+#ifndef LOGIN_ROUTE_HXX
+#define LOGIN_ROUTE_HXX
 
+#include "repositories/user_repository.hxx"
 #include "route.hxx"
-#include "crow.h"
-#include "types/UserFields.hxx"
 
 class LoginRoute : public Route
 {
   public:
-    explicit LoginRoute(crow::App<crow::CORSHandler>& app, AuthService& auth, Database& db);
-    void setup() override;
+    using Deps = std::tuple<UserRepository&>;
 
-    UserFields loadUserData(const crow::request& req);
-    void ensureUserExist(const std::string& username);
-    void verifyPassword(const UserFields& user);
-    crow::response buildLoginRouteResponse(const std::string& token, const int& userId);
-    int getUserId(const std::string& username);
+    LoginRoute(RouteContext context, UserRepository& userRepository) : Route(RouteInfo("/login", http::Method::POST), context), userRepository(userRepository) {}
+
+    std::unique_ptr<http::Response> handleRequest(const http::Request& req) override;
+  private:
+    UserFields loadUserData(const http::Request& req);
+    std::unique_ptr<http::Response> buildLoginRouteResponse(const std::string& token, const int userId);
+    const UserRepository& userRepository;
 };
 
 #endif

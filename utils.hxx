@@ -4,6 +4,7 @@
 #include "crow/http_response.h"
 #include "database.hxx"
 #include "error.hxx"
+#include "types/HttpTypes.hxx"
 #include <crow.h>
 #include <nlohmann/json.hpp>
 #include <concepts>
@@ -25,9 +26,9 @@ inline crow::response json_response(int code, const nlohmann::json& body) {
     return res;
 }
 
-inline std::string getTokenFromRequest(const crow::request& req)
+inline std::string getTokenFromRequest(const http::Request& req)
 {
-  return req.get_header_value("Authorization").substr(7);
+  return std::string(req.getHeader("Authorization").value_or("")).substr(7);
 }
 
 template <typename Func>

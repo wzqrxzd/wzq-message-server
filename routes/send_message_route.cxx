@@ -1,89 +1,46 @@
-#include "routes/send_message_route.hxx"
+#include "send_message_route.hxx"
+#include "commands/new_message.hxx"
 #include "error.hxx"
-#include "route.hxx"
-#include "utils.hxx"
-#include <spdlog/spdlog.h>
-#include <fmt/format.h>
-#include "types/Message.hxx"
 
-SendMessageRoute::SendMessageRoute(crow::App<crow::CORSHandler>& app, WebsocketController& ws, AuthService& auth, Database& db) : WsAccessRoute(app, ws, auth, db) {}
-
-void SendMessageRoute::setup()
+std::unique_ptr<http::Response> SendMessageRoute::handleRequest(const http::Request& req)
 {
-  CROW_ROUTE(app, "/chats/<int>/messages").methods(crow::HTTPMethod::POST)([this](const crow::request& req, int chatId){
-    return trySafe([&](){
-      const std::string username = auth.authorize(req);
-      const int userId = getIdFromUsername(username);
+  const std::string username = context.auth.authorize(req);
+  const int userId = userRepository.getUserId(username);
 
-      ensureUserInChat(userId, chatId);
+  Message message = loadMessageData(nlohmann::json::parse(req.body()));
 
-      const std::string content = loadMessageContent(req);
+  chatRepository.ensureUserInChat(userId, message.chatId);
 
-      Message message;
-      message.username = username;
-      message.senderId = userId;
-      message.chatId = chatId;
-      message.content = content;
-      message.messageId = insertMessageToDb(message);
+  message.username = username;
+  message.senderId = userId;
+  message.messageId = messageRepository.sendMessage(message);
 
-      wsController.notifyNewMessage(message);
+  context.ws.dispatch(std::make_unique<NewMessageCommand>(message));
 
-      return buildSendMessageResponse(message.messageId); 
-  });
-  });
+  return buildRouteResponse(message.messageId);
 }
 
-std::string SendMessageRoute::loadMessageContent(const crow::request& req)
+
+Message SendMessageRoute::loadMessageData(const nlohmann::json& json)
 {
-  auto bodyJson = crow::json::load(req.body);
-  std::string content = getJsonField<std::string>(bodyJson, "content");
-  
-  return content;
+  if (!json.contains("content") || !json.contains("chat_id"))
+    throw JsonException("Malformed json");
+
+  Message message {
+    .content = json["content"],
+    .chatId = json["chat_id"]
+  };
+
+  return message;
 }
 
-int SendMessageRoute::getIdFromUsername(const std::string& username)
+std::unique_ptr<http::Response> SendMessageRoute::buildRouteResponse(const int messageId)
 {
-    ConnectionGuard DB(dbHandle);
-
-    pqxx::work worker(DB.get());
-    pqxx::result result = worker.exec_prepared("find_user_by_username", username);
-    int userId = result[0]["id"].as<int>();
-
-    return userId;
-}
-
-void SendMessageRoute::ensureUserInChat(const int& userId, const int& chatId)
-{
-  ConnectionGuard DB(dbHandle);
-
-  pqxx::work worker(DB.get());
-  pqxx::result result = worker.exec_prepared("check_user_in_chat", chatId, userId);
-
-  if (result.empty())
-    throw AuthException(AuthError::PermissionDenied);
-}
-
-int SendMessageRoute::insertMessageToDb(const Message& message)
-{
-  ConnectionGuard DB(dbHandle);
-  pqxx::work worker(DB.get());
-
-  pqxx::result result = worker.exec_prepared("insert_message",
-    message.chatId,
-    message.senderId,
-    message.content
+  std::unique_ptr<http::CoreResponse> res = std::make_unique<http::CoreResponse>();
+  res->setCode(200);
+  res->setBody(
+      fmt::format(R"({{"status":"message_sent","message_id":"{}"}})", std::to_string(messageId))
   );
-  int messageId = result[0]["id"].as<int>();
-
-  worker.commit();
-  return messageId;
+  return std::move(res);
 }
 
-crow::response SendMessageRoute::buildSendMessageResponse(const int& messageId)
-{
-  return json_response(200,
-    fmt::format(R"({{"status":"message_sent","message_id":"{}"}})",
-      std::to_string(messageId)
-    )
-  );
-}

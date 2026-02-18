@@ -1,63 +1,38 @@
-#include "routes/user_update_info_route.hxx"
+#include "user_update_info_route.hxx"
 #include "error.hxx"
-#include "route.hxx"
-#include "utils.hxx"
-#include <spdlog/spdlog.h>
-#include <fmt/format.h>
+#include <nlohmann/json.hpp>
 
-UserUpdateInfoRoute::UserUpdateInfoRoute(crow::App<crow::CORSHandler>& app, WebsocketController& ws, AuthService& auth, Database& db) : WsAccessRoute(app, ws, auth, db) {}
-
-void UserUpdateInfoRoute::setup()
+std::unique_ptr<http::Response> UserUpdateInfoRoute::handleRequest(const http::Request& req)
 {
-  CROW_ROUTE(app, "/user/<int>").methods(crow::HTTPMethod::PATCH)([this](const crow::request& req, int expectedUserId){
-    return trySafe([&](){
-        const std::string username = auth.authorize(req);
-        const UserFields updatedFields = parseRequest(req);
+  const std::string username = context.auth.authorize(req);
+  const int userId = userRepository.getUserId(username);
 
-        ensureOwner(username, expectedUserId);
-        changeUserData(updatedFields, expectedUserId);
+  const UserFields updatedUserFields = loadUserData(req);
 
-        return crow::response(204);
-    });
-  });
+  userRepository.changeUserData(userId, updatedUserFields);
+
+  return buildRouteResponse();
 }
 
-UserFields UserUpdateInfoRoute::parseRequest(const crow::request& req)
+UserFields UserUpdateInfoRoute::loadUserData(const http::Request& req)
 {
-  auto body = crow::json::load(req.body);
-  UserFields updatedFields;
+  auto bodyJson = nlohmann::json::parse(req.body());
 
-  updatedFields.name = getOptionalJsonField<std::string>(body, "name");
-  updatedFields.username = getOptionalJsonField<std::string>(body, "username");
-  updatedFields.description = getOptionalJsonField<std::string>(body, "description");
+  if (!bodyJson.contains("name") || !bodyJson.contains("username") || !bodyJson.contains("password"))
+    throw JsonException("Malformed Json");
 
-  return updatedFields;
+  UserFields user;
+  user.name = bodyJson["name"];
+  user.username = bodyJson["username"];
+  user.password = bodyJson["password"];
+
+  return user;
 }
 
-void UserUpdateInfoRoute::ensureOwner(const std::string& username, const int& userId){
-    ConnectionGuard DB(dbHandle);
-    pqxx::work worker(DB.get());
-
-    pqxx::result result = worker.exec_prepared("get_username_by_id", userId);
-    const std::string expectedUsername = result[0]["username"].as<std::string>();
-
-    if (expectedUsername!=username)
-      throw AuthException(AuthError::PermissionDenied);
-
-    worker.commit();
-}
-
-
-void UserUpdateInfoRoute::changeUserData(const UserFields& updatedFields, const int& userId)
+std::unique_ptr<http::Response> UserUpdateInfoRoute::buildRouteResponse()
 {
-  ConnectionGuard DB(dbHandle);
-  pqxx::work worker(DB.get());
+  std::unique_ptr<http::CoreResponse> response = std::make_unique<http::CoreResponse>();
+  response->setCode(204);
 
-  worker.exec_prepared("change_user_info",
-      userId,
-      updatedFields.username ? updatedFields.username.value().c_str() : nullptr,
-      updatedFields.username ? updatedFields.username.value().c_str() : nullptr,
-      updatedFields.description ? updatedFields.description.value().c_str() : nullptr);
-
-  worker.commit();
+  return std::move(response);
 }

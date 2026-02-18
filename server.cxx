@@ -6,18 +6,30 @@
 #include "env_utils.hxx"
 #include "server.hxx"
 #include <sodium.h>
-#include "routes/chats_messages_route.hxx"
+// #include "routes/chats_messages_route.hxx"
+// #include "routes/create_chat_route.hxx"
+// #include "routes/delete_message_route.hxx"
+// #include "routes/insert_member_route.hxx"
+#include "routes/chat_messages_route.hxx"
 #include "routes/create_chat_route.hxx"
+#include "routes/delete_chat_route.hxx"
 #include "routes/delete_message_route.hxx"
 #include "routes/insert_member_route.hxx"
 #include "routes/register_route.hxx"
 #include "routes/login_route.hxx"
+// #include "routes/send_message_route.hxx"
+// #include "routes/chats_route.hxx"
+// #include "routes/user_info_route.hxx"
+// #include "routes/user_update_info_route.hxx"
+// #include "routes/ws_route.hxx"
+#include "routes/notify_ws_route.hxx"
+
+#include "repositories/user_repository.hxx"
+#include "repositories/chat_repository.hxx"
 #include "routes/send_message_route.hxx"
-#include "routes/chats_route.hxx"
 #include "routes/user_info_route.hxx"
 #include "routes/user_update_info_route.hxx"
-#include "routes/ws_route.hxx"
-#include "websocket_controller.hxx"
+#include "routes/chats_route.hxx"
 
 Server::Server() :
   dbHandle(
@@ -26,9 +38,14 @@ Server::Server() :
     env_utils::getEnvVar("POSTGRES_PASSWORD"),
     4
   ),
+  userRepository(dbHandle),
+  chatRepository(dbHandle),
+  messageRepository(dbHandle),
+
   secret(env_utils::getEnvVar("JWT_SECRET")),
+  server(app),
   auth(),
-  routeManager(app, auth, dbHandle)
+  routeManager(server, auth, dbHandle, static_cast<UserRepository&>(userRepository), static_cast<ChatRepository&>(chatRepository), static_cast<MessageRepository&>(messageRepository))
 {
   if (sodium_init() < 0) {
       throw std::runtime_error("libsodium init failed");
@@ -62,17 +79,30 @@ void Server::setupRoutes()
 {
   spdlog::info("setup routes start");
 
-  routeManager.addRoute<WSRoute>();
+  // routeManager.addRoute<WSRoute>();
+  // routeManager.addRoute<LoginRoute>();
+  // routeManager.addRoute<RegisterRoute>();
+  // routeManager.addRoute<SendMessageRoute>();
+  // routeManager.addRoute<ChatsRoute>();
+  // routeManager.addRoute<ChatsMessagesRoute>();
+  // routeManager.addRoute<CreateChatRoute>();
+  // routeManager.addRoute<InsertMemberRoute>();
+  // routeManager.addRoute<DeleteMessageRoute>();
+  // routeManager.addRoute<UserInfoRoute>();
+  // routeManager.addRoute<UserUpdateInfoRoute>();
+
+  routeManager.addWebsocketRoute<NotifyWebsocketRoute>();
   routeManager.addRoute<LoginRoute>();
   routeManager.addRoute<RegisterRoute>();
-  routeManager.addRoute<SendMessageRoute>();
-  routeManager.addRoute<ChatsRoute>();
-  routeManager.addRoute<ChatsMessagesRoute>();
-  routeManager.addRoute<CreateChatRoute>();
-  routeManager.addRoute<InsertMemberRoute>();
-  routeManager.addRoute<DeleteMessageRoute>();
   routeManager.addRoute<UserInfoRoute>();
   routeManager.addRoute<UserUpdateInfoRoute>();
+  routeManager.addRoute<SendMessageRoute>();
+  routeManager.addRoute<ChatMessagesRoute>();
+  routeManager.addRoute<CreateChatRoute>();
+  routeManager.addRoute<ChatsRoute>();
+  routeManager.addRoute<DeleteChatRoute>();
+  routeManager.addRoute<DeleteMessageRoute>();
+  routeManager.addRoute<InsertMemberRoute>();
 
   routeManager.setupRoutes();
 }

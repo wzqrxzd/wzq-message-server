@@ -1,51 +1,66 @@
 #include "create_chat_route.hxx"
+#include "commands/new_chat.hxx"
 #include "error.hxx"
-#include "register_route.hxx"
-#include "route.hxx"
-#include "utils.hxx"
-#include <spdlog/spdlog.h>
-#include <fmt/format.h>
 
-CreateChatRoute::CreateChatRoute(crow::App<crow::CORSHandler>& app, WebsocketController& ws, AuthService& auth, Database& db) : WsAccessRoute(app, ws, auth, db) {}
-
-void CreateChatRoute::setup()
+std::unique_ptr<http::Response> CreateChatRoute::handleRequest(const http::Request& req)
 {
-  CROW_ROUTE(app, "/chats").methods(crow::HTTPMethod::POST)([this](const crow::request& req){
-    return trySafe([&](){
-      if (!auth.authorizeRequest(req))
-        throw AuthException(AuthError::TokenExpired);
+  const std::string username = context.auth.authorize(req);
+  const int userId = userRepository.getUserId(username);
+  UserFields user{
+    .username = username,
+    .id = userId,
+  };
+  
+  Chat chat = loadChatData(nlohmann::json::parse(req.body()));
+  chat.usersId[userId] = user; 
 
-      std::string token = req.get_header_value("Authorization").substr(7);
-      std::string username = auth.getUsernameFromToken(token);
+  addUsersToChat(chat);
 
-      auto body_json = crow::json::load(req.body);
+  for (auto [id, user] : chat.usersId)
+    spdlog::info("user: {}", id);
+  context.ws.dispatch(std::make_unique<NewChatCommand>(chat));
 
-      std::string chat_name = getJsonField<std::string>(body_json, "name");
-      std::string usernameSecond = getJsonField<std::string>(body_json, "name");
+  return buildRouteResponse(chat.chatId);
+}
 
-      ConnectionGuard DB(dbHandle);
+std::unique_ptr<http::Response> CreateChatRoute::buildRouteResponse(const int chatId)
+{
+  std::unique_ptr<http::CoreResponse> res = std::make_unique<http::CoreResponse>();
+  res->setCode(200);
+  res->setBody(
+    fmt::format(R"({{"chat_id":"{}"}})", std::to_string(chatId))
+  );
 
-      pqxx::work W(DB.get());
+  return std::move(res);
+}
 
-      int chat_id = W.exec_prepared("insert_chat", chat_name)[0]["id"].as<int>();
+Chat CreateChatRoute::loadChatData(const nlohmann::json& json)
+{
+  if (!json.contains("name"))
+    throw JsonException("Malformed Json");
 
-      pqxx::result R_user = W.exec_prepared("find_user_by_username", username);
-      int user_id = R_user[0]["id"].as<int>();
+  const std::string chatName = json["name"];
+  const std::string username = json["name"];
 
-      W.exec_prepared("insert_chat_member", chat_id, user_id);
+  const int userId = userRepository.getUserId(username);
 
-      pqxx::result R_userSecond = W.exec_prepared("find_user_by_username", usernameSecond);
-      int userSecond_id = R_userSecond[0]["id"].as<int>();
+  UserFields secondUser {
+    .username = username,
+    .id = userId
+  };
+  secondUser.username = username;
+  secondUser.id = userId;
 
-      W.exec_prepared("insert_chat_member", chat_id, userSecond_id);
+  Chat chat;
+  chat.chatName = chatName;
+  chat.usersId[userId] = secondUser;
+  chat.chatId = chatRepository.createChat(chat);
 
-      W.commit();
+  return chat;
+}
 
-      wsController.notifyNewChat(chat_id, user_id, chat_name);
-      wsController.notifyNewChat(chat_id, userSecond_id, chat_name);
-
-      return json_response(200, fmt::format(R"({{"chat_id":"{}"}})", std::to_string(chat_id)));
-  });
-  });
-
+void CreateChatRoute::addUsersToChat(const Chat& chat)
+{
+  for (const auto& [id, user] : chat.usersId)
+    chatRepository.insertUserToChat(id, chat.chatId);
 }
